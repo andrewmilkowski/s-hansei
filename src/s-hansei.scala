@@ -5,7 +5,7 @@ case class pV[a](x: List[Pair[Double, vc[a]]]) extends vc[a]
 case class V[a](x: a) extends vc[a]
 case class C[a](x: () => pV[a]) extends vc[a]
 
-object s_hansei
+object s_hansei extends Application
 {
 	def test1() =
 	{
