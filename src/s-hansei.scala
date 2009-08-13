@@ -1,9 +1,9 @@
 import scala.continuations.ControlContext._
 
-sealed abstract class vc[+a]
-case class pV[+a](x: List[Pair[Double, vc[a]]]) extends vc[a]
-case class V[+a](x: a) extends vc[a]
-case class C[+a](x: unit => pV[a]) extends vc[a]
+sealed abstract class vc[a]
+case class pV[a](x: List[Pair[Double, vc[a]]]) extends vc[a]
+case class V[a](x: a) extends vc[a]
+case class C[a](x: () => pV[a]) extends vc[a]
 
 object s_hansei
 {
@@ -35,7 +35,7 @@ object s_hansei
 
 	def pv_unit[a](x : a): pV[a] = pV(List((1.0, V(x))))
 
-	def dist[a](ch : List[Pair[Double, a]]) =
+	def dist[a](ch : List[Pair[Double, a]]) : a =
 	{
 		shift
 		{
@@ -43,6 +43,8 @@ object s_hansei
 			ch map {(p: Double, v: a) => (p, C (() => k(v)))}
 		}
 	}
+
+	def reify0[a](m: (() => a)) : pV[a] = { reset (() => pv_unit (m ())) }
 
 	def main(args : Array[String]) =
 	{
