@@ -1,3 +1,4 @@
+import scala.continuations._
 import scala.continuations.ControlContext._
 
 sealed abstract class vc[a]
@@ -35,7 +36,7 @@ object s_hansei extends Application
 
 	def pv_unit[a](x : a): pV[a] = pV(List((1.0, V(x))))
 
-	def dist[a](ch : List[Pair[Double, a]]) : a =
+	def dist[a](ch : List[Pair[Double, a]]) : a @cps[pV[a], List[(Double, C[a])]] =
 	{
 		shift
 		{
@@ -44,7 +45,7 @@ object s_hansei extends Application
 		}
 	}
 
-	def reify0[a](m: (() => a)) : pV[a] = { reset (() => pv_unit (m ())) }
+	def reify0[a](m: (() => a @cps[pV[a], pV[a]])) : pV[a] = { reset (pv_unit (m ())) }
 
 	override def main(args : Array[String]) =
 	{
