@@ -40,13 +40,13 @@ object s_hansei extends Application
 		shift
 		{
 			k: (a => pV[a]) => 
-			ch map {(p: Double, v: a) => (p, C (() => k(v)))}
+			ch map {x: Pair[Double, a] => (x._1, C (() => k(x._2)))}
 		}
 	}
 
 	def reify0[a](m: (() => a)) : pV[a] = { reset (() => pv_unit (m ())) }
 
-	def main(args : Array[String]) =
+	override def main(args : Array[String]) =
 	{
 		println(test1())		// result 20
 		println(baz())			// result 70
