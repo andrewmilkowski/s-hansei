@@ -8,6 +8,25 @@ case class C[a](x: () => pV[a]) extends vc[a]
 
 object s_hansei extends Application
 {
+  trait MonadCompanion[M[_]]
+  {
+    // returns the computation that yields the given value 
+	implicit def result[A](x: A): M[A]
+  }
+
+  trait Monad[A, M[_]]
+  {
+    implicit val meta: MonadCompanion[M]  
+	import meta._
+		  
+    // chains this computation with the next one, `f`
+    def >>=[B](f: A => M[B]): M[B] 
+		  
+		  
+    def map[B](f: A => B): M[B]        = >>= {x => result(f(x))}
+    def flatMap[B](f: A => M[B]): M[B] = >>=(f)
+  }
+
   type Monadic[+U, C[_]] =
   { 
     def flatMap[V](f: U => C[V]): C[V] 
@@ -23,45 +42,32 @@ object s_hansei extends Application
 
   implicit def reflective[A](xs:Iterable[A]) = new Reflective[A,Iterable](xs) 
 
- /* The State monad was gleefully ripped off from scalaz, and is therefore due to Tony Morris
-    with surgical modifications due to James Iry. */
-	sealed trait State[S, +A]
-	{
-  	def apply(s: S): (S, A)
+ /* The State monad was gleefully ripped off from Adriaan Moors. */
+  trait StateMonadCompanion[M[_], State] extends MonadCompanion[M]
+  {
+    def apply[A](fun: State => (A, State)): M[A]
 
-  	def map[B](f: A => B): State[S, B] = State.state(apply(_) match
-		{
-    	case (s, a) => (s, f(a))
-  	})
-
-  	def flatMap[B](f: A => State[S, B]): State[S, B] = State.state(apply(_) match
-		{
-    	case (s, a) => f(a)(s)
-		})
+    implicit def result[A](x: A): M[A] = apply((x, _))
   
-  	def !(s: S) = apply(s)._2
+    def update(f: State => State): M[State] = apply{s: State => (s, f(s))}
+    def set(s: State): M[State] = update(x => s)
+    def fetch = update(x => x)
+  }
 
-  	def ~>(s: S) = apply(s)._1
+  trait StateMonad[A, M[x] <: StateMonad[x, M, State], State] extends Monad[A, M]
+  {
+    implicit override val meta: StateMonadCompanion[M, State]
+    import meta._
+  
+    val initState: State
+    val stateTrans: State => (A, State)
 
-  	def withs(f: S => S): State[S, A] = State.state(f andThen (apply(_)))
-	}
-
-	object State
-	{
-  	def state[S, A](f: S => (S, A)) = new State[S, A]
-		{
-    	def apply(s: S) = f(s)
-  	}
-
-  	def init[S] = state[S, S](s => (s, s))
-
-  	def modify[S](f: S => S) = init[S] flatMap (s => state(_ => (f(s), ())))
-
-  	def unit[S,A](value : A) = state{x : S => (x, value)}
- 
-  	def put[S](newState : S) = modify[S]{x : S => newState}
-
-  	def get[S] = state{x : S => (x, x)}
+    def >>=[B](f: A => M[B]) = apply
+      { currState => 
+        val (a, nextState) = stateTrans(currState); f(a).stateTrans(nextState)
+      }
+        
+    def run = stateTrans(initState)._1
   }
 
 /*
