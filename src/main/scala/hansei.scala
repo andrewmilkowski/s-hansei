@@ -39,6 +39,7 @@ object s_hansei extends Application
 	}
   }
 
+/*
   implicit def reflective[A](s:State[A]) = new
   {
     def reflect[B] =
@@ -50,6 +51,7 @@ object s_hansei extends Application
       }
     }
   }
+*/
 
   def test1() : Int =
   {
